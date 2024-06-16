@@ -178,8 +178,8 @@ namespace CustomAvatar.Avatar
 
                 if (avatarFormat == AvatarFormat.AVATAR_FORMAT_CUSTOM)
                 {
-	                FixTrackingReferences(vrikManager);
-	            }
+                    FixTrackingReferences(vrikManager);
+                }
             }
 
             if (transform.localPosition.sqrMagnitude > 0)

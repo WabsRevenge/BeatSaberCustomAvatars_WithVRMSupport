@@ -20,6 +20,7 @@ using System;
 using CustomAvatar.Logging;
 using CustomAvatar.Tracking;
 using UnityEngine;
+using VRMAvatar;
 using Zenject;
 
 namespace CustomAvatar.Avatar
@@ -166,6 +167,16 @@ namespace CustomAvatar.Avatar
             if (_initialLocalPosition.sqrMagnitude > 0)
             {
                 _logger.LogWarning("Avatar root position is not at origin; resizing by height and floor adjust may not work properly.");
+            }
+
+            if (avatarFormat == AvatarPrefab.AvatarFormat.AVATAR_FORMAT_VRM)
+            {
+                VRIKManager ik = GetComponentInChildren<VRIKManager>();
+                if (ik != null)
+                {
+                    VRMHandPositionConstants.ApplyToHand(ik.references_leftHand, false); //curl fingers
+                    VRMHandPositionConstants.ApplyToHand(ik.references_rightHand, true); //curl fingers
+                }
             }
         }
 
