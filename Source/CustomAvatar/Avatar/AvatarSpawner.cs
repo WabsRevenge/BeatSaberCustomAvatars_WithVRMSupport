@@ -92,6 +92,12 @@ namespace CustomAvatar.Avatar
 
             // SpawnedAvatar needs to be instantiated first since other behaviours depend on it
             SpawnedAvatar spawnedAvatar = subContainer.InstantiateComponent<SpawnedAvatar>(avatarInstance);
+            spawnedAvatar.avatarFormat = avatar.avatarFormat;
+            if (spawnedAvatar.avatarFormat == AvatarPrefab.AvatarFormat.AVATAR_FORMAT_VRM)
+            {
+                spawnedAvatar.gameObject.SetActive(true);
+            }
+
             subContainer.Bind<SpawnedAvatar>().FromInstance(spawnedAvatar);
 
             foreach ((Type type, Func<AvatarPrefab, bool> condition) in _componentsToAdd)

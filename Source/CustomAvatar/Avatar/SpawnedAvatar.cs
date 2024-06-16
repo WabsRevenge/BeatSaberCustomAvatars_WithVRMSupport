@@ -31,6 +31,11 @@ namespace CustomAvatar.Avatar
     public class SpawnedAvatar : MonoBehaviour
     {
         /// <summary>
+        /// The format of the avatar [normal, VRM, etc].
+        /// </summary>
+        public AvatarPrefab.AvatarFormat avatarFormat { get; set; }
+        
+        /// <summary>
         /// The <see cref="AvatarPrefab"/> used to spawn this avatar.
         /// </summary>
         public AvatarPrefab prefab { get; private set; }
@@ -89,20 +94,33 @@ namespace CustomAvatar.Avatar
 
         public void SetFirstPersonVisibility(FirstPersonVisibility visibility)
         {
-            switch (visibility)
+            if (avatarFormat == AvatarPrefab.AvatarFormat.AVATAR_FORMAT_CUSTOM)
             {
-                case FirstPersonVisibility.Visible:
-                    SetChildrenToLayer(AvatarLayers.kAlwaysVisible);
-                    break;
+                switch (visibility)
+                {
+                    case FirstPersonVisibility.Visible:
+                        SetChildrenToLayer(AvatarLayers.kAlwaysVisible);
+                        break;
 
-                case FirstPersonVisibility.VisibleWithExclusionsApplied:
-                    SetChildrenToLayer(AvatarLayers.kAlwaysVisible);
-                    ApplyFirstPersonExclusions();
-                    break;
+                    case FirstPersonVisibility.VisibleWithExclusionsApplied:
+                        SetChildrenToLayer(AvatarLayers.kAlwaysVisible);
+                        ApplyFirstPersonExclusions();
+                        break;
 
-                case FirstPersonVisibility.Hidden:
-                    SetChildrenToLayer(AvatarLayers.kOnlyInThirdPerson);
-                    break;
+                    case FirstPersonVisibility.Hidden:
+                        SetChildrenToLayer(AvatarLayers.kOnlyInThirdPerson);
+                        break;
+                }
+            }
+            else if (avatarFormat == AvatarPrefab.AvatarFormat.AVATAR_FORMAT_VRM)
+            {
+                VRM.VRMFirstPerson vrmFirstPerson = GetComponentInChildren<VRM.VRMFirstPerson>();
+                if (vrmFirstPerson)
+                {
+                    VRM.VRMFirstPerson.FIRSTPERSON_ONLY_LAYER = CustomAvatar.Avatar.AvatarLayers.kAlwaysVisible;
+                    VRM.VRMFirstPerson.THIRDPERSON_ONLY_LAYER = CustomAvatar.Avatar.AvatarLayers.kOnlyInThirdPerson;
+                    vrmFirstPerson.Setup();
+                }
             }
         }
 
