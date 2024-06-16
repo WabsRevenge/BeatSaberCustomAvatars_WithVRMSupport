@@ -129,7 +129,7 @@ namespace CustomAvatar.UI
             _progressObject.SetActive(false);
         }
 
-        protected override void Start()
+        public override void Start()
         {
             base.Start();
 
@@ -138,12 +138,12 @@ namespace CustomAvatar.UI
             _authorText.fontSize = 3;
         }
 
-        protected override void HighlightDidChange(TransitionType transitionType)
+        public override void HighlightDidChange(TransitionType transitionType)
         {
             RefreshVisuals();
         }
 
-        protected override void SelectionDidChange(TransitionType transitionType)
+        public override void SelectionDidChange(TransitionType transitionType)
         {
             RefreshVisuals();
         }

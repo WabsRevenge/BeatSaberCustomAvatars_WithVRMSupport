@@ -13,6 +13,7 @@
 //
 //  You should have received a copy of the GNU Lesser General Public License
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#define WABS_WORKAROUND
 
 using System;
 using System.Reflection;
@@ -152,7 +153,12 @@ namespace CustomAvatar.Zenject
 
         private void BindOpenVR()
         {
+#if WABS_WORKAROUND
+            //error CS0103: The name 'OpenVRHelper' does not exist in the current context
+            if (true)
+#else
             if (OpenVRHelper.Initialize())
+#endif //WABS_WORKAROUND
             {
                 Container.Bind(typeof(OpenVRRenderModelLoader), typeof(IDisposable)).To<OpenVRRenderModelLoader>().AsSingle();
                 Container.Bind(typeof(IRenderModelProvider), typeof(IInitializable)).To<OpenVRRenderModelProvider>().AsSingle();

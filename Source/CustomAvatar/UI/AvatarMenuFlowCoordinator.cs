@@ -72,7 +72,7 @@ namespace CustomAvatar.UI
             _menuButtons = menuButtons;
         }
 
-        protected override void DidActivate(bool firstActivation, bool addedToHierarchy, bool screenSystemEnabling)
+        public override void DidActivate(bool firstActivation, bool addedToHierarchy, bool screenSystemEnabling)
         {
             showBackButton = true;
 
@@ -87,7 +87,7 @@ namespace CustomAvatar.UI
             }
         }
 
-        protected override void BackButtonWasPressed(ViewController topViewController)
+        public override void BackButtonWasPressed(ViewController topViewController)
         {
             try
             {
