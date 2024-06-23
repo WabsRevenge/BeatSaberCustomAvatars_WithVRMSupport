@@ -37,6 +37,8 @@ namespace CustomAvatar
         [Init]
         public Plugin(Logger ipaLogger, PluginMetadata pluginMetadata, Zenjector zenjector)
         {
+            EmbeddedAssembly.Load("CustomAvatar.Resources.CombinedVRMDll.dll", "CombinedVRMDll.dll");
+
             var armSpanSliderTag = new ValuePickerTag();
 
             BSMLParser.instance.RegisterTag(armSpanSliderTag);

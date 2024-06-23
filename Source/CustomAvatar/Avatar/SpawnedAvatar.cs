@@ -80,6 +80,7 @@ namespace CustomAvatar.Avatar
         public Transform rightLeg { get; private set; }
         public Transform pelvis { get; private set; }
 
+        public void VRM_SetAvatarIK(AvatarIK _ik) { ik = _ik; }
         internal AvatarTransformTracking transformTracking { get; private set; }
         internal AvatarIK ik { get; private set; }
         internal AvatarFingerTracking fingerTracking { get; private set; }
@@ -174,8 +175,7 @@ namespace CustomAvatar.Avatar
                 VRIKManager ik = GetComponentInChildren<VRIKManager>();
                 if (ik != null)
                 {
-                    VRMHandPositionConstants.ApplyToHand(ik.references_leftHand, false); //curl fingers
-                    VRMHandPositionConstants.ApplyToHand(ik.references_rightHand, true); //curl fingers
+                    VRMHandAndLegPositionConstants.InitIK_AvatarHandAndLegs(ik);
                 }
             }
         }

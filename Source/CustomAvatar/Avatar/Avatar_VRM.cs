@@ -23,11 +23,8 @@ using Zenject;
 
 namespace VRMAvatar
 {
-    public class VRMHandPositionConstants
+    public class VRMHandAndLegPositionConstants
     {
-        public VRMHandPositionConstants()
-        {
-        }
         public struct Finger
         {
             public Quaternion knuckleOne;
@@ -82,7 +79,7 @@ namespace VRMAvatar
             }
         }
 
-        public Vector3 ApplyToHand(Transform hand, bool bRightHand)
+        public static Vector3 GetWrist(Transform hand, bool bRightHand)
         {
             var offsetBetweenWristAndGrip = new Vector3();
             if (hand == null)
@@ -155,6 +152,89 @@ namespace VRMAvatar
 
             return offsetBetweenWristAndGrip;
         }
+
+        public static Vector3 ApplyToHand(Transform hand, bool bRightHand)
+        {
+            var offsetBetweenWristAndGrip = new Vector3();
+            if (hand == null)
+                return new Vector3(); //nothing can be done.
+
+            //NOTE: Hand rotation can't be done here as the Tracking Device is mapped directly to the hand, overwriting rotations.
+
+            int nFingers = 5;
+            if (hand.childCount < nFingers)
+                nFingers = hand.childCount;
+
+            float magnitude_hand_to_finger = 0.04f; //default:4cm.
+            float magnitude_indexfinger_beforeAfterRotation = 0.03f;//default: 3cm.
+            float magnitude_first_last_fingers = 0.11f; //default 11cm.
+
+            for (int i = 0; i < nFingers; i++)
+            {
+                Transform finger = hand.GetChild(i); //knuckle 1
+
+                if (finger == null)
+                    continue; //nothing can be done.
+
+                Transform knuckleTwo = finger.GetChild(0);
+                Transform knuckleThree = knuckleTwo.GetChild(0) ?? null;
+
+                Finger fingerThing = new(Quaternion.identity, Quaternion.identity, Quaternion.identity);
+                switch (i)
+                {
+                    case 0:
+                        magnitude_hand_to_finger = (hand.position - finger.position).magnitude;
+                        fingerThing = index;
+                        break;
+                    case 1:
+                        fingerThing = little;
+                        break;
+                    case 2:
+                        fingerThing = middle;
+                        break;
+                    case 3:
+                        fingerThing = ring;
+                        break;
+                    case 4:
+                        fingerThing = thumb;
+                        break;
+                    default:
+                        break;
+                }
+
+                Vector3 before = knuckleThree ? knuckleThree.position : new Vector3(0.0f, 0.0f, 0.0f);
+                finger.rotation = Reflect(fingerThing.knuckleOne, bRightHand); //kuckle 1
+                if (knuckleTwo)
+                    knuckleTwo.rotation = Reflect(fingerThing.knuckleTwo, bRightHand); //knuckle 2
+                if (knuckleThree)
+                    knuckleThree.rotation = Reflect(fingerThing.knuckleThree, bRightHand); //knuckle 3
+                Vector3 after = knuckleThree ? knuckleThree.position : new Vector3(0.0f, 0.0f, 0.03f);
+                if (i == 0)
+                    magnitude_indexfinger_beforeAfterRotation = (before - after).magnitude;
+
+                if (i == nFingers - 1/*last is thumb*/)
+                {
+                    magnitude_first_last_fingers = (hand.GetChild(0).position - hand.GetChild(i).position).magnitude;
+                }
+            }
+
+            /*calculate center of grip*/
+            float sign = bRightHand ? 1 : -1;
+            offsetBetweenWristAndGrip.x = sign * (magnitude_indexfinger_beforeAfterRotation / 2);
+            offsetBetweenWristAndGrip.y = 0.75f * magnitude_hand_to_finger;
+            offsetBetweenWristAndGrip.z = -magnitude_first_last_fingers;
+
+            return offsetBetweenWristAndGrip;
+        }
+
+        public static void InitIK_AvatarHandAndLegs(VRIKManager ik)
+        {
+            ApplyToHand(ik.references_leftHand, false);
+            ApplyToHand(ik.references_rightHand, true);
+
+            ik.references_rightThigh.transform.eulerAngles = new Vector3(0f, 35f, 0);
+            ik.references_leftThigh.transform.eulerAngles = new Vector3(0f, -35f, 0f);
+        }
     }
 
     [HarmonyPatch(typeof(PlayerAvatarManager), "GetAvatarFileNames")]
@@ -191,7 +271,6 @@ namespace VRMAvatar
             if (ExternalAssets.ShaderHelper.m_externalShaders == null)
             {
                 //Shaders for VRM Avatars (Beat Saber Specific)
-                Debug.LogWarning("Load AssetBundle: vrmmaterialchange_bs_shaders.assets");
                 AssetBundleCreateRequest shadersBundleCreateRequest = AssetBundle.LoadFromStreamAsync(Assembly.GetExecutingAssembly().GetManifestResourceStream("CustomAvatar.Resources.vrmmaterialchange_bs_shaders.assets"));
                 AssetBundle assetBundle = shadersBundleCreateRequest.assetBundle;
                 AssetBundleRequest assetBundleRequest = assetBundle.LoadAllAssetsAsync<Shader>();
@@ -233,28 +312,17 @@ namespace VRMAvatar
                 GameObject.DontDestroyOnLoad(avatar.gameObject);
                 obj = avatar.gameObject;
 
-                // obj.SetActive(false);
-                //avatar.transform.position = new Vector3(0f, -100f, 0f);
-                // RuntimeGltfInstance instance = loader.Load();
-
                 instance.transform.SetParent(avatar.transform, false);
 #if USE_VRM_10
 #else
                 instance.ShowMeshes();
 #endif
-                //instance.gameObject.SetActive(false); //don't set the prefab object as active. it will be instantiated later.
 
                 VRIKManager ik = instance.gameObject.AddComponent<VRIKManager>();
                 ik.AutoDetectReferences();
 
                 VRMFirstPerson firstPerson = instance.GetComponent<VRMFirstPerson>();
                 firstPerson.Setup();
-
-                ik.references_leftThigh.Rotate(new Vector3(-0.1f, 0f, 0f), Space.World);
-                ik.references_leftCalf.Rotate(new Vector3(0.1f, 0f, 0f), Space.World);
-
-                ik.references_rightThigh.Rotate(new Vector3(-0.1f, 0f, 0f), Space.World);
-                ik.references_rightCalf.Rotate(new Vector3(0.1f, 0f, 0f), Space.World);
 
                 var leftHand = new GameObject("LeftHand");
                 leftHand.transform.SetParent(avatar.transform);
@@ -265,17 +333,14 @@ namespace VRMAvatar
                 //adjust hand and wrist locations [wrt Saber Stick]
                 leftHandTarget.transform.SetParent(leftHand.transform);
                 leftHandTarget.transform.eulerAngles = new Vector3(-10f, 0f, 90f); //rotate wrist to standard natural angle.
-
-                VRMHandPositionConstants handPos = new();
-                leftHandTarget.transform.position = handPos.ApplyToHand(ik.references_leftHand, false); //curl fingers
-
+                leftHandTarget.transform.position = VRMHandAndLegPositionConstants.GetWrist(ik.references_leftHand, false); //curl fingers
                 ik.solver_leftArm_target = leftHandTarget.transform;
 
                 var rightHandTarget = new GameObject("RightHandTarget");
                 //adjust hand and wrist locations [wrt Saber Stick]
                 rightHandTarget.transform.SetParent(rightHand.transform);
                 rightHandTarget.transform.eulerAngles = new Vector3(-10f, 0f, -90f); //rotate wrist to standard natural angle.
-                rightHandTarget.transform.position = handPos.ApplyToHand(ik.references_rightHand, true); //get wrist position. then curl fingers.
+                rightHandTarget.transform.position = VRMHandAndLegPositionConstants.GetWrist(ik.references_rightHand, true); //get wrist position. then curl fingers.
                 ik.solver_rightArm_target = rightHandTarget.transform;
 
                 Transform vrmFirstPersonHeadBone = firstPerson.FirstPersonBone;
@@ -357,7 +422,7 @@ namespace VRMAvatar
                 __result = task;
                 return false;
             }
-
+            
             //AssetBundle
             return true;
         }

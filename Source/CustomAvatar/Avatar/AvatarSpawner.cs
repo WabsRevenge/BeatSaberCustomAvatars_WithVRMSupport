@@ -109,6 +109,12 @@ namespace CustomAvatar.Avatar
                 }
             }
 
+            if (spawnedAvatar.avatarFormat == AvatarPrefab.AvatarFormat.AVATAR_FORMAT_VRM)
+            {
+                if (spawnedAvatar.ik == null && spawnedAvatar.GetComponent<AvatarIK>())
+                    spawnedAvatar.VRM_SetAvatarIK(spawnedAvatar.GetComponent<AvatarIK>());
+            }
+
             subContainer.InjectGameObject(avatarInstance);
             avatarInstance.SetActive(true);
 
