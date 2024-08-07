@@ -34,7 +34,7 @@ namespace CustomAvatar.Player
             internal static readonly Func<object, Transform> kReplayerCoreGetter = kOriginComponentType?.CreatePropertyGetter<Transform>("ReplayerCore");
             internal static readonly Func<object, Transform> kReplayerCenterAdjustGetter = kOriginComponentType?.CreatePropertyGetter<Transform>("ReplayerCenterAdjust");
 
-            internal static bool kAvailable = kCameraControllerType != null && kOriginComponentType != null && kCameraField != null && kReplayerCoreGetter != null && kReplayerCenterAdjustGetter != null;
+            internal static readonly bool kAvailable = kCameraControllerType != null && kOriginComponentType != null && kCameraField != null && kReplayerCoreGetter != null && kReplayerCenterAdjustGetter != null;
         }
 
         private const string kEnvironmentObjectPath = "/Environment";
@@ -134,7 +134,14 @@ namespace CustomAvatar.Player
                 return;
             }
 
-            SpectatorCamera spectatorCameraController = _container.InstantiateComponent<SpectatorCamera>(BeatLeaderReflection.kCameraField(controller).gameObject);
+            Camera camera = BeatLeaderReflection.kCameraField(controller);
+
+            if (camera == null)
+            {
+                return;
+            }
+
+            SpectatorCamera spectatorCameraController = _container.InstantiateComponent<SpectatorCamera>(camera.gameObject);
             spectatorCameraController.origin = BeatLeaderReflection.kReplayerCoreGetter(originComponent);
             spectatorCameraController.playerSpace = BeatLeaderReflection.kReplayerCenterAdjustGetter(originComponent);
         }

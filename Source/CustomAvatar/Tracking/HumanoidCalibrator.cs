@@ -28,6 +28,7 @@ namespace CustomAvatar.Tracking
 {
     internal class HumanoidCalibrator
     {
+        private const float kEyeToHeadPivotOffset = 0.07f;
         private const float kEyeHeightToPelvisHeightRatio = 3.5f / 7f;
 
         private readonly TrackingRig _trackingRig;
@@ -72,7 +73,7 @@ namespace CustomAvatar.Tracking
             _trackingRig.fullBodyTracking.localScale = Vector3.one;
             _trackingRig.fullBodyTracking.localPosition = Vector3.zero;
 
-            Transform center = CreateCenter(_activeOriginManager.current, playerEyeHeight);
+            Transform center = CreateCenter(_activeOriginManager.current);
 
             if (_settings.moveFloorWithRoomAdjust)
             {
@@ -82,7 +83,7 @@ namespace CustomAvatar.Tracking
             Vector3 leftFootPos = center.InverseTransformPoint(_trackingRig.leftFoot.transform.position);
             Vector3 rightFootPos = center.InverseTransformPoint(_trackingRig.rightFoot.transform.position);
 
-            ApplyCalibration(center, _trackingRig.head, _trackingRig.headCalibration, new Vector3(0, playerEyeHeight, 0), Quaternion.Inverse(center.rotation) * _trackingRig.head.transform.rotation);
+            ApplyCalibration(center, _trackingRig.head, _trackingRig.headCalibration, new Vector3(0, playerEyeHeight, 0), Quaternion.identity);
             ApplyCalibration(center, _trackingRig.pelvis, _trackingRig.pelvisCalibration, new Vector3(0, playerEyeHeight * kEyeHeightToPelvisHeightRatio, 0), Quaternion.identity);
             ApplyCalibration(center, _trackingRig.leftFoot, _trackingRig.leftFootCalibration, new Vector3(leftFootPos.x, 0, 0), Quaternion.Euler(0, -10f, 0));
             ApplyCalibration(center, _trackingRig.rightFoot, _trackingRig.rightFootCalibration, new Vector3(rightFootPos.x, 0, 0), Quaternion.Euler(0, 10f, 0));
@@ -173,25 +174,25 @@ namespace CustomAvatar.Tracking
             }
         }
 
-        private Transform CreateCenter(Transform parent, float playerEyeHeight)
+        private Transform CreateCenter(Transform parent)
         {
             Transform center = new GameObject("Center").transform;
+            Transform head = _trackingRig.head.transform;
+
+            // We want the user's head rotation to match the avatar's head directly rather than assuming whatever
+            // position they're in is forward. I'm not sure how I feel about doing that, but it's what VRChat does.
+            var rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(head.forward, parent.up), parent.up);
+            head.rotation = rotation;
 
             center.SetParent(parent, false);
             center.SetPositionAndRotation(
-                _trackingRig.head.transform.position - _trackingRig.head.transform.TransformVector(new Vector3(0, 0, GetHeadOffsetFromHeight(playerEyeHeight))),
-                Quaternion.LookRotation(Vector3.ProjectOnPlane(_trackingRig.head.transform.forward, parent.up), parent.up));
+                head.TransformPoint(new Vector3(0, 0, -kEyeToHeadPivotOffset)),
+                rotation);
 
             // put center on the ground
             center.localPosition = new Vector3(center.localPosition.x, 0, center.localPosition.z);
 
             return center;
-        }
-
-        private float GetHeadOffsetFromHeight(float eyeHeight)
-        {
-            // this is loosely based on height vs head circumference derived from average height & head circumference at different ages
-            return 0.08f + 0.000175f * eyeHeight;
         }
 
         // TODO: shove this into a shared helper
